@@ -9,8 +9,7 @@ var hostname = os.hostname();
 const weatherApiKey = process.env.WEATHER_API_KEY || '';
 
 var host = process.env.REDIS_URL || '127.0.0.1';
-var port = 6379;
-let redis_client = redis.createClient(port, host);
+let redis_client = redis.createClient(host);
 
 const weather_time_to_live = 600;
 
