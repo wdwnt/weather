@@ -8,6 +8,8 @@ var hostname = os.hostname();
 
 const weatherApiKey = process.env.WEATHER_API_KEY || '';
 
+var port = process.env.PORT || 3000;
+
 var host = process.env.REDIS_URL || '127.0.0.1';
 let redis_client = redis.createClient(host);
 
@@ -105,5 +107,5 @@ function getWeatherInformation(req, resp) {
     });
 }
 
-app.listen(3000);
-console.log(hostname + ": App listening on port 3000");
+app.listen(port);
+console.log(hostname + ": App listening on port " + port);
