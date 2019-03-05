@@ -1,0 +1,17 @@
+{
+    "name": "now-weather",
+    "version": "1.0.0",
+    "description": "Provides weather information for Disney destinations around the world",
+    "main": "server.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "express": "^4.16.3",
+        "node-fetch": "^2.1.2",
+        "redis": "^2.8.0",
+        "request": "^2.85.0"
+    }
+}
