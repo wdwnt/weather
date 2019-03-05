@@ -15,6 +15,12 @@ let redis_client = redis.createClient(host);
 
 const weather_time_to_live = 600;
 
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+
 app.get("/api/wdw", (req, resp) => {
     var request = {
         lat: 28.4160036778,
