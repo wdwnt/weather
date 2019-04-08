@@ -21,35 +21,79 @@ app.use(function(req, res, next) {
     next();
 });
 
+app.get("/api/all", async (req, resp) => {
+    const [wdw, dlr, tdr, dlp, hkdl, shdr] = await Promise.all([
+        getWDWWeatherInformation(),
+        getDLRWeatherInformation(),
+        getTDRWeatherInformation(),
+        getDLPWeatherInformation(),
+        getHKDLWeatherInformation(),
+        getSHDRWeatherInformation()
+    ]);
+
+    return resp.json({
+        'wdw': wdw,
+        'dlr': dlr,
+        'tdr': tdr,
+        'dlp': dlp,
+        'hkdl': hkdl,
+        'shdr': shdr,
+    });
+});
+
 app.get("/api/wdw", async (req, resp) => {
-    var result = await getWeatherInformation(28.4160036778, -81.5811902834, 'wdw');
+    var result = await getWDWWeatherInformation();
     resp.json(result);
 });
 
 app.get("/api/dlr", async (req, resp) => {
-    var result = await getWeatherInformation(33.8095545068, -117.9189529669, 'dlr');
+    var result = await getDLRWeatherInformation();
     resp.json(result);
 });
 
 app.get("/api/tdr", async (req, resp) => {
-    var result = await getWeatherInformation(35.6329, 139.8804, 'tdr');
+    var result = await getTDRWeatherInformation();
     resp.json(result);
 });
 
 app.get("/api/dlp", async (req, resp) => {
-    var result = await getWeatherInformation(48.870205, 2.779913, 'dlp');
+    var result = await getDLPWeatherInformation();
     resp.json(result);
 });
 
 app.get("/api/hkdl", async (req, resp) => {
-    var result = await getWeatherInformation(22.313131, 114.044517, 'hkdl');
+    var result = await getHKDLWeatherInformation();
     resp.json(result);
 });
 
 app.get("/api/shdr", async (req, resp) => {
-    var result = await getWeatherInformation(31.147097966725, 121.66901898194, 'shdr');
+    var result = await getSHDRWeatherInformation();
     resp.json(result);
 });
+
+async function getWDWWeatherInformation() {
+    return await getWeatherInformation(28.4160036778, -81.5811902834, 'wdw');
+}
+
+async function getDLRWeatherInformation() {
+    return await getWeatherInformation(33.8095545068, -117.9189529669, 'dlr');
+}
+
+async function getTDRWeatherInformation() {
+    return await getWeatherInformation(35.6329, 139.8804, 'tdr');
+}
+
+async function getDLPWeatherInformation() {
+    return await getWeatherInformation(48.870205, 2.779913, 'dlp');
+}
+
+async function getHKDLWeatherInformation() {
+    return await getWeatherInformation(22.313131, 114.044517, 'hkdl');
+}
+
+async function getSHDRWeatherInformation() {
+    return await getWeatherInformation(31.147097966725, 121.66901898194, 'shdr');
+}
 
 async function getWeatherInformation(lat, lon, key) {
     let redis_data = await redis_client.get(key);
