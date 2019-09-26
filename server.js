@@ -41,35 +41,73 @@ app.get("/api/all", async (req, resp) => {
     });
 });
 
-app.get("/api/wdw", async (req, resp) => {
-    var result = await getWDWWeatherInformation();
-    resp.json(result);
+app.get("/api/:destination", async (req, resp) => {
+    var destination = req.params.destination;
+    var destinationWeather = await getWeatherForDestination(destination);
+
+    resp.json(destinationWeather.weather);
 });
 
-app.get("/api/dlr", async (req, resp) => {
-    var result = await getDLRWeatherInformation();
-    resp.json(result);
+app.get("/api/speech/:destination", async (req, resp) => {
+    var destination = req.params.destination;
+
+    var destinationWeather = await getWeatherForDestination(destination);
+    var weather = destinationWeather.weather;
+    var destinationName = destinationWeather.destinationName;
+
+    var currentlySummary = weather.currently.summary.toLowerCase();
+    var currentlyTempF = Math.round(weather.currently.temperature);
+    var currentlyTempC = convertFahrenheitToCelsius(currentlyTempF);
+    var currentConditions = `The weather at ${destinationName} is ${currentlySummary} and ${currentlyTempF} degrees Fahrenheit or ${currentlyTempC} degress Celsius.`;
+
+    var todaysForecast = formatForecastForSpeech(weather.daily.data[0], 'today');
+    var tomorrowsForecast = formatForecastForSpeech(weather.daily.data[1], 'tomorrow');
+
+    var response = `${currentConditions} ${todaysForecast} ${tomorrowsForecast}`;
+
+    resp.json({ speech: response });
 });
 
-app.get("/api/tdr", async (req, resp) => {
-    var result = await getTDRWeatherInformation();
-    resp.json(result);
-});
+async function getWeatherForDestination(destination) {
+    var weather = {};
+    var destinationName = 'Walt Disney World';
 
-app.get("/api/dlp", async (req, resp) => {
-    var result = await getDLPWeatherInformation();
-    resp.json(result);
-});
+    switch (destination) {
+        case 'wdw':
+            weather = await getWDWWeatherInformation();
+            destinationName = 'Walt Disney World';
+            break;
+        case 'dlr':
+            weather = await getDLRWeatherInformation();
+            destinationName = 'Disneyland Resort';
+            break;
+        case 'tdr':
+            weather = await getTDRWeatherInformation();
+            destinationName = 'Tokyo Disney Resort';
+            break;
+        case 'dlp':
+            weather = await getDLPWeatherInformation();
+            destinationName = 'Disneyland Paris';
+            break;
+        case 'hkdl':
+            weather = await getHKDLWeatherInformation();
+            destinationName = 'Hong Kong Disneyland Resort';
+            break;
+        case 'shdr':
+            weather = await getSHDRWeatherInformation();
+            destinationName = 'Shanghai Disney Resort';
+            break;
+        default:
+            weather = await getWDWWeatherInformation();
+            destinationName = 'Walt Disney World';
+            break;
+    }
 
-app.get("/api/hkdl", async (req, resp) => {
-    var result = await getHKDLWeatherInformation();
-    resp.json(result);
-});
-
-app.get("/api/shdr", async (req, resp) => {
-    var result = await getSHDRWeatherInformation();
-    resp.json(result);
-});
+    return {
+        weather,
+        destinationName
+    }
+}
 
 async function getWDWWeatherInformation() {
     return await getWeatherInformation(28.4160036778, -81.5811902834, 'wdw');
@@ -115,6 +153,22 @@ async function getWeatherInformation(lat, lon, key) {
     } else {
         return JSON.parse(redis_data);
     }
+}
+
+function formatForecastForSpeech(forecast, dayDisplayText) {
+    var forecastText = forecast.summary.replace(".", '').toLowerCase();
+
+    var tempFHigh = Math.round(forecast.temperatureHigh);
+    var tempCHigh = convertFahrenheitToCelsius(tempFHigh);
+
+    var tempFLow = Math.round(forecast.temperatureLow);
+    var tempCLow = convertFahrenheitToCelsius(tempFLow);
+
+    return `The forecast for ${dayDisplayText} is ${forecastText} with a high of ${tempFHigh} degrees Fahrenheit or ${tempCHigh} degress Celsius and a low of ${tempFLow} degrees Fahrenheit or ${tempCLow} degress Celsius.`;
+}
+
+function convertFahrenheitToCelsius(tempF) {
+    return Math.round((tempF - 32) * (5 / 9));
 }
 
 app.listen(port);
