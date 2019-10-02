@@ -59,7 +59,7 @@ app.get("/api/speech/:destination", async (req, resp) => {
     var currentlyTempF = Math.round(weather.currently.temperature);
     var currentlyTempC = convertFahrenheitToCelsius(currentlyTempF);
     var currentConditions = `The weather at ${destinationName} is ${currentlySummary} and ${currentlyTempF} degrees Fahrenheit or ${currentlyTempC} degrees Celsius.`;
-    var currentConditionsDisplay = `The weather at ${destinationName} is ${currentlySummary} and ${currentlyTempF}&deg;F (${currentlyTempC}&deg;C).`;
+    var currentConditionsDisplay = `The weather at ${destinationName} is ${currentlySummary} and ${currentlyTempF}°F (${currentlyTempC}°C).`;
 
     var todaysForecast = formatForecastForSpeech(weather.daily.data[0], 'today');
     var tomorrowsForecast = formatForecastForSpeech(weather.daily.data[1], 'tomorrow');
@@ -167,7 +167,7 @@ function formatForecastForSpeech(forecast, dayDisplayText) {
     var tempCLow = convertFahrenheitToCelsius(tempFLow);
 
     var speech = `The forecast for ${dayDisplayText} is ${forecastText} with a high of ${tempFHigh} degrees Fahrenheit or ${tempCHigh} degrees Celsius and a low of ${tempFLow} degrees Fahrenheit or ${tempCLow} degrees Celsius.`;
-    var displayText = `The forecast for ${dayDisplayText} is ${forecastText} with a high of ${tempFHigh}&deg;F (${tempCHigh}&deg;C) and a low of ${tempFLow}&deg;F (${tempCLow}&deg;C).`;
+    var displayText = `The forecast for ${dayDisplayText} is ${forecastText} with a high of ${tempFHigh}°F (${tempCHigh}°C) and a low of ${tempFLow}°F (${tempCLow}°C).`;
 
     return { speech, displayText };
 }
