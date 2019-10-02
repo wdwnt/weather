@@ -6,12 +6,12 @@ const fetch = require("node-fetch");
 
 var hostname = os.hostname();
 
-const weatherApiKey = process.env.WEATHER_API_KEY || 'affba3c54e25b66b7a7f45738e831c1e';
+const weatherApiKey = process.env.WEATHER_API_KEY || '';
 
 var port = process.env.PORT || 3000;
 
-var host = process.env.REDIS_URL || 'localhost';
-let redis_client = redis.createClient(6379, host);
+var host = process.env.REDIS_URL || '127.0.0.1';
+let redis_client = redis.createClient(host);
 
 const weather_time_to_live = 600;
 
