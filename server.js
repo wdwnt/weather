@@ -10,7 +10,7 @@ const weatherApiKey = process.env.WEATHER_API_KEY || '';
 
 var port = process.env.PORT || 3000;
 
-var host = process.env.REDIS_URL || '127.0.0.1';
+var host = process.env.REDISCLOUD_URL || '127.0.0.1';
 let redis_client = redis.createClient(host);
 
 const weather_time_to_live = 600;
