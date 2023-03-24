@@ -1,78 +1,56 @@
-var express = require('express');
-var app = express();
-var os = require("os");
-const redis = require("async-redis");
+const express = require('express');
+const app = express();
+const os = require("os");
 const fetch = require("node-fetch");
 
-var hostname = os.hostname();
+const hostname = os.hostname();
 
-const weatherApiKey = process.env.WEATHER_API_KEY || '';
+const port = process.env.PORT || 3000;
 
-var port = process.env.PORT || 3000;
-
-var host = process.env.REDISCLOUD_URL || '127.0.0.1';
-let redis_client = redis.createClient(host);
-
-const weather_time_to_live = 600;
-
-app.use(function(req, res, next) {
+app.use(function(_req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
 
-app.get("/api/all", async (req, resp) => {
-    const [wdw, dlr, tdr, dlp, hkdl, shdr] = await Promise.all([
-        getWDWWeatherInformation(),
-        getDLRWeatherInformation(),
-        getTDRWeatherInformation(),
-        getDLPWeatherInformation(),
-        getHKDLWeatherInformation(),
-        getSHDRWeatherInformation()
-    ]);
+app.get("/api/all", async (_req, resp) => {
+    const response = await getWeatherInformation('all');
 
-    return resp.json({
-        'wdw': wdw,
-        'dlr': dlr,
-        'tdr': tdr,
-        'dlp': dlp,
-        'hkdl': hkdl,
-        'shdr': shdr,
-    });
+    return resp.json(response);
 });
 
 app.get("/api/:destination", async (req, resp) => {
-    var destination = req.params.destination;
-    var destinationWeather = await getWeatherForDestination(destination);
+    const destination = req.params.destination;
+    const destinationWeather = await getWeatherForDestination(destination);
 
     resp.json(destinationWeather.weather);
 });
 
 app.get("/api/speech/:destination", async (req, resp) => {
-    var destination = req.params.destination;
+    const destination = req.params.destination;
 
-    var destinationWeather = await getWeatherForDestination(destination);
-    var weather = destinationWeather.weather;
-    var destinationName = destinationWeather.destinationName;
+    const destinationWeather = await getWeatherForDestination(destination);
+    const weather = destinationWeather.weather;
+    const destinationName = destinationWeather.destinationName;
 
-    var currentlySummary = weather.currently.summary.toLowerCase();
-    var currentlyTempF = Math.round(weather.currently.temperature);
-    var currentlyTempC = convertFahrenheitToCelsius(currentlyTempF);
-    var currentConditions = `The weather at ${destinationName} is ${currentlySummary} and ${currentlyTempF} degrees Fahrenheit or ${currentlyTempC} degrees Celsius.`;
-    var currentConditionsDisplay = `The weather at ${destinationName} is ${currentlySummary} and ${currentlyTempF}°F (${currentlyTempC}°C).`;
+    const currentlySummary = weather.currently.summary.toLowerCase();
+    const currentlyTempF = Math.round(weather.currently.temperature);
+    const currentlyTempC = convertFahrenheitToCelsius(currentlyTempF);
+    const currentConditions = `The weather at ${destinationName} is ${currentlySummary} and ${currentlyTempF} degrees Fahrenheit or ${currentlyTempC} degrees Celsius.`;
+    const currentConditionsDisplay = `The weather at ${destinationName} is ${currentlySummary} and ${currentlyTempF}°F (${currentlyTempC}°C).`;
 
-    var todaysForecast = formatForecastForSpeech(weather.daily.data[0], 'today');
-    var tomorrowsForecast = formatForecastForSpeech(weather.daily.data[1], 'tomorrow');
+    const todaysForecast = formatForecastForSpeech(weather.daily.data[0], 'today');
+    const tomorrowsForecast = formatForecastForSpeech(weather.daily.data[1], 'tomorrow');
 
-    var speech = `${currentConditions} ${todaysForecast.speech} ${tomorrowsForecast.speech}`;
-    var displayText = `${currentConditionsDisplay} ${todaysForecast.displayText} ${tomorrowsForecast.displayText}`;
+    const speech = `${currentConditions} ${todaysForecast.speech} ${tomorrowsForecast.speech}`;
+    const displayText = `${currentConditionsDisplay} ${todaysForecast.displayText} ${tomorrowsForecast.displayText}`;
 
     resp.json({ speech, displayText });
 });
 
 async function getWeatherForDestination(destination) {
-    var weather = {};
-    var destinationName = 'Walt Disney World';
+    let weather = {};
+    let destinationName = 'Walt Disney World';
 
     switch (destination) {
         case 'wdw':
@@ -112,62 +90,48 @@ async function getWeatherForDestination(destination) {
 }
 
 async function getWDWWeatherInformation() {
-    return await getWeatherInformation(28.4160036778, -81.5811902834, 'wdw');
+    return await getWeatherInformation('wdw');
 }
 
 async function getDLRWeatherInformation() {
-    return await getWeatherInformation(33.8095545068, -117.9189529669, 'dlr');
+    return await getWeatherInformation('dlr');
 }
 
 async function getTDRWeatherInformation() {
-    return await getWeatherInformation(35.6329, 139.8804, 'tdr');
+    return await getWeatherInformation('tdr');
 }
 
 async function getDLPWeatherInformation() {
-    return await getWeatherInformation(48.870205, 2.779913, 'dlp');
+    return await getWeatherInformation('dlp');
 }
 
 async function getHKDLWeatherInformation() {
-    return await getWeatherInformation(22.313131, 114.044517, 'hkdl');
+    return await getWeatherInformation('hkdl');
 }
 
 async function getSHDRWeatherInformation() {
-    return await getWeatherInformation(31.147097966725, 121.66901898194, 'shdr');
+    return await getWeatherInformation('shdr');
 }
 
-async function getWeatherInformation(lat, lon, key) {
-    let redis_data = await redis_client.get(key);
+async function getWeatherInformation(key) {
+    const data = await fetch(
+      `https://fastpass.wdwnt.com/weather/${key}`
+    );
 
-    if (redis_data === null) {
-        let darkSkyDataRequest = await fetch(
-            'https://api.darksky.net/forecast/' +
-                weatherApiKey +
-                '/' +
-                lat +
-                ',' +
-                lon +
-                '?exclude=minutely,hourly,alerts,flags'
-        );
-
-        let responseJson = await darkSkyDataRequest.json();
-        await redis_client.setex(key, weather_time_to_live, JSON.stringify(responseJson));
-        return responseJson;
-    } else {
-        return JSON.parse(redis_data);
-    }
+    return await data.json();
 }
 
 function formatForecastForSpeech(forecast, dayDisplayText) {
-    var forecastText = forecast.summary.replace(".", '').toLowerCase();
+    const forecastText = forecast.summary.replace(".", '').toLowerCase();
 
-    var tempFHigh = Math.round(forecast.temperatureHigh);
-    var tempCHigh = convertFahrenheitToCelsius(tempFHigh);
+    const tempFHigh = Math.round(forecast.temperatureHigh);
+    const tempCHigh = convertFahrenheitToCelsius(tempFHigh);
 
-    var tempFLow = Math.round(forecast.temperatureLow);
-    var tempCLow = convertFahrenheitToCelsius(tempFLow);
+    const tempFLow = Math.round(forecast.temperatureLow);
+    const tempCLow = convertFahrenheitToCelsius(tempFLow);
 
-    var speech = `The forecast for ${dayDisplayText} is ${forecastText} with a high of ${tempFHigh} degrees Fahrenheit or ${tempCHigh} degrees Celsius and a low of ${tempFLow} degrees Fahrenheit or ${tempCLow} degrees Celsius.`;
-    var displayText = `The forecast for ${dayDisplayText} is ${forecastText} with a high of ${tempFHigh}°F (${tempCHigh}°C) and a low of ${tempFLow}°F (${tempCLow}°C).`;
+    const speech = `The forecast for ${dayDisplayText} is ${forecastText} with a high of ${tempFHigh} degrees Fahrenheit or ${tempCHigh} degrees Celsius and a low of ${tempFLow} degrees Fahrenheit or ${tempCLow} degrees Celsius.`;
+    const displayText = `The forecast for ${dayDisplayText} is ${forecastText} with a high of ${tempFHigh}°F (${tempCHigh}°C) and a low of ${tempFLow}°F (${tempCLow}°C).`;
 
     return { speech, displayText };
 }
